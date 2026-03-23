@@ -548,7 +548,8 @@ document.addEventListener("DOMContentLoaded", () => {
   updateGutter();
 });
 
-const PISTON_LANG = { cpp: "c++", csharp: "csharp", bash: "bash" };
+const JUDGE0_URL = "https://ce.judge0.com/submissions?base64_encoded=false&wait=true";
+const JUDGE0_LANG = { javascript: 93, typescript: 101, python: 71, java: 62, cpp: 54, csharp: 51, go: 95, rust: 73, php: 68, ruby: 72, swift: 83, kotlin: 78, bash: 46, sql: 82, plaintext: null, html: null, css: null, json: null, xml: null, yaml: null, dockerfile: null };
 const CLIENT_LANGS = new Set(["javascript", "typescript"]);
 
 window.runCode = async function() {
@@ -573,22 +574,25 @@ window.runCode = async function() {
       }
       out.textContent = logs.join("\n") || "(no output)";
     } else {
-      const pistonLang = PISTON_LANG[lang] || lang;
-      const resp = await fetch("https://emkc.org/api/v2/piston/execute", {
+      const langId = JUDGE0_LANG[lang];
+      if (!langId) { out.innerHTML = '<span class="info">This language is not executable.</span>'; btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>Run'; return; }
+      const resp = await fetch(JUDGE0_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language: pistonLang, version: "*", files: [{ content: code }] })
+        body: JSON.stringify({ language_id: langId, source_code: code, stdin: "" })
       });
-      if (!resp.ok) throw new Error("Piston API returned " + resp.status);
+      if (!resp.ok) throw new Error("Judge0 API returned " + resp.status);
       const data = await resp.json();
-      const run = data.run || {};
-      let txt = (run.stdout || "") + (run.stderr || "");
-      if (!txt.trim()) txt = "(no output)";
+      const stdout = data.stdout || "";
+      const stderr = data.stderr || "";
+      const compErr = data.compile_output || "";
+      let txt = stdout + stderr + compErr;
+      if (!txt.trim()) txt = data.status?.description === "Accepted" ? "(no output)" : (data.status?.description || "(no output)");
       out.innerHTML = "";
-      if (run.stderr) {
-        const errSpan = document.createElement("span"); errSpan.className = "err"; errSpan.textContent = run.stderr;
-        const stdSpan = document.createTextNode(run.stdout || "");
-        out.appendChild(stdSpan); out.appendChild(errSpan);
+      if (stderr || compErr) {
+        if (stdout) out.appendChild(document.createTextNode(stdout));
+        const errSpan = document.createElement("span"); errSpan.className = "err"; errSpan.textContent = stderr + compErr;
+        out.appendChild(errSpan);
       } else {
         out.textContent = txt;
       }
