@@ -414,6 +414,7 @@ function addMsg(name, body, time, sys) {
 
 window.toggleChat = function() {
   chatOpen = !chatOpen;
+  if (chatOpen && codeOpen) { codeOpen = false; $("codePanel").classList.remove("open"); $("codeBtn").classList.remove("active"); }
   $("chatPanel").classList.toggle("open", chatOpen);
   $("chatBtn").classList.toggle("active", chatOpen);
   if (chatOpen) { unread = 0; $("chatBtn").classList.remove("has-dot"); $("chatIn").focus(); }
@@ -432,6 +433,7 @@ let codeOpen = false, codeSyncTimer = null, ignoreCodeSync = false;
 
 window.toggleCode = function() {
   codeOpen = !codeOpen;
+  if (codeOpen && chatOpen) { chatOpen = false; $("chatPanel").classList.remove("open"); $("chatBtn").classList.remove("active"); }
   $("codePanel").classList.toggle("open", codeOpen);
   $("codeBtn").classList.toggle("active", codeOpen);
   if (codeOpen) $("cpEditor").focus();
