@@ -5,7 +5,7 @@ async function joinAs(page, name, room = "test-room") {
   await page.goto("/");
   await expect(page.locator("#joinScreen")).toBeVisible();
 
-  await page.click("#camBtn");
+  await page.click("#startCamBtn");
   await expect(page.locator("#joinBtn")).toBeEnabled({ timeout: 10_000 });
 
   await page.fill("#nameIn", name);
@@ -28,7 +28,7 @@ test.describe("Join & Leave", () => {
 
   test("can start camera and enable join button", async ({ page }) => {
     await page.goto("/");
-    await page.click("#camBtn");
+    await page.click("#startCamBtn");
     await expect(page.locator("#joinBtn")).toBeEnabled({ timeout: 10_000 });
   });
 
