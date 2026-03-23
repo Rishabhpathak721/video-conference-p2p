@@ -80,7 +80,7 @@ button { font-family: inherit; }
 /* ── Video Grid ───────────────────────────── */
 .grid { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; overflow: hidden; align-items: center; align-content: center; justify-content: center; }
 .grid .tile { flex: 1 1 calc(50% - 6px); max-width: calc(50% - 3px); min-width: 200px; }
-.grid .tile:only-child { max-width: 80%; }
+.grid .tile:only-child { max-width: 90%; }
 .grid.has-screen { flex-wrap: nowrap; }
 .grid.has-screen .screen-tile { flex: 3 1 0; max-width: none; min-width: 0; }
 .grid.has-screen .cam-col { flex: 1 1 0; min-width: 160px; max-width: 280px; display: flex; flex-direction: column; gap: 6px; }
@@ -115,8 +115,8 @@ button { font-family: inherit; }
 .sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
 
 /* ── Chat Panel ───────────────────────────── */
-.chat { width: 0; overflow: hidden; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: width .25s; flex-shrink: 0; }
-.chat.open { width: 320px; }
+.chat { width: 0; overflow: hidden; background: var(--surface); border-left: none; display: flex; flex-direction: column; transition: width .25s; flex-shrink: 0; }
+.chat.open { width: 320px; border-left: 1px solid var(--border); }
 .chat-head { padding: 12px 16px; font-weight: 600; font-size: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 .chat-head button { background: none; border: none; color: var(--text3); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; }
 .chat-head button:hover { background: var(--surface2); color: var(--text); }
@@ -138,8 +138,8 @@ button { font-family: inherit; }
 .csend svg { width: 18px; height: 18px; }
 
 /* ── Code Editor Panel ────────────────────── */
-.code-panel { width: 0; overflow: hidden; background: #0d1117; border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: width .25s; flex-shrink: 0; }
-.code-panel.open { width: 480px; }
+.code-panel { width: 0; overflow: hidden; background: #0d1117; border-left: none; display: flex; flex-direction: column; transition: width .25s; flex-shrink: 0; }
+.code-panel.open { width: 480px; border-left: 1px solid var(--border); }
 .cp-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #161b22; border-bottom: 1px solid #21262d; flex-shrink: 0; }
 .cp-head .cp-icon { color: var(--blue); display: flex; }
 .cp-head .cp-icon svg { width: 18px; height: 18px; }
@@ -234,6 +234,7 @@ button { font-family: inherit; }
       <div class="chat-head"><span>Chat</span><button onclick="toggleChat()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg></button></div>
       <div class="msgs" id="msgs"></div>
       <div class="cinput"><input id="chatIn" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()"/><button class="csend" onclick="sendChat()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg></button></div>
+    </div>
     <!-- Code Editor Panel -->
     <div class="code-panel" id="codePanel">
       <div class="cp-head">
