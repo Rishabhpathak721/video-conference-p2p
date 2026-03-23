@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Video Conference</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
 :root {
   --bg: #0f172a; --surface: #1e293b; --surface2: #334155; --border: #334155;
@@ -130,6 +132,45 @@ button { font-family: inherit; }
 .csend:hover { background: #2563eb; }
 .csend svg { width: 18px; height: 18px; }
 
+/* ── Code Block in Chat ───────────────────── */
+.msg .code-wrap { margin-top: 6px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.msg .code-head { display: flex; align-items: center; justify-content: space-between; padding: 5px 10px; background: #161b22; font-size: 11px; color: var(--text3); }
+.msg .code-head span { font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.msg .code-head button { background: none; border: 1px solid var(--border); color: var(--text2); font-size: 10px; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-family: inherit; }
+.msg .code-head button:hover { background: var(--surface2); color: var(--text); }
+.msg pre { margin: 0; }
+.msg pre code { font-size: 12px; line-height: 1.5; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; display: block; padding: 10px 12px !important; max-height: 260px; overflow: auto; background: #0d1117 !important; }
+.msg pre code::-webkit-scrollbar { width: 4px; height: 4px; }
+.msg pre code::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+
+/* ── Code Modal ──────────────────────────── */
+.code-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+.code-modal-overlay.show { display: flex; }
+.code-modal { background: var(--surface); border-radius: 16px; width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,.5); border: 1px solid var(--border); overflow: hidden; }
+.code-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.code-modal-head h3 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.code-modal-head h3 svg { width: 20px; height: 20px; color: var(--blue); }
+.code-modal-head .close-m { background: none; border: none; color: var(--text3); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; }
+.code-modal-head .close-m:hover { background: var(--surface2); color: var(--text); }
+.code-modal-head .close-m svg { width: 18px; height: 18px; }
+.code-modal-body { padding: 16px 20px; }
+.code-modal-body label { display: block; font-size: 11px; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; }
+.code-modal-body select { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; outline: none; cursor: pointer; margin-bottom: 14px; font-family: inherit; }
+.code-modal-body select:focus { border-color: var(--blue); }
+.code-modal-body textarea { width: 100%; height: 180px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: #0d1117; color: #e6edf3; font-size: 13px; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; line-height: 1.5; outline: none; resize: vertical; tab-size: 2; }
+.code-modal-body textarea:focus { border-color: var(--blue); }
+.code-modal-foot { display: flex; gap: 10px; justify-content: flex-end; padding: 12px 20px; border-top: 1px solid var(--border); }
+.code-modal-foot button { padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+.code-modal-foot .cancel-m { background: var(--surface2); color: var(--text); }
+.code-modal-foot .cancel-m:hover { background: #475569; }
+.code-modal-foot .send-m { background: var(--blue); color: #fff; }
+.code-modal-foot .send-m:hover { background: #2563eb; }
+.code-modal-foot .send-m:disabled { opacity: .4; cursor: not-allowed; }
+
+.cinput .code-trigger { padding: 9px; border: none; border-radius: 10px; background: var(--surface2); color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.cinput .code-trigger:hover { background: #475569; color: var(--text); }
+.cinput .code-trigger svg { width: 18px; height: 18px; }
+
 @media (max-width: 640px) {
   .chat.open { width: 100%; position: absolute; inset: 0; z-index: 20; }
   .grid.g2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
@@ -184,7 +225,7 @@ button { font-family: inherit; }
     <div class="chat" id="chatPanel">
       <div class="chat-head"><span>Chat</span><button onclick="toggleChat()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg></button></div>
       <div class="msgs" id="msgs"></div>
-      <div class="cinput"><input id="chatIn" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()"/><button class="csend" onclick="sendChat()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg></button></div>
+      <div class="cinput"><button class="code-trigger" onclick="openCodeModal()" title="Share Code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/><path d="m13 4-2 16"/></svg></button><input id="chatIn" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()"/><button class="csend" onclick="sendChat()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg></button></div>
     </div>
   </div>
   <div class="controls">
@@ -202,6 +243,49 @@ button { font-family: inherit; }
     <button class="cb feat" id="chatBtn" onclick="toggleChat()" title="Chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg></button>
     <div class="sep"></div>
     <button class="cb leave" onclick="leaveRoom()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>Leave</button>
+  </div>
+</div>
+
+<!-- ═══ CODE MODAL ═══ -->
+<div class="code-modal-overlay" id="codeModal">
+  <div class="code-modal">
+    <div class="code-modal-head">
+      <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/><path d="m13 4-2 16"/></svg>Share Code</h3>
+      <button class="close-m" onclick="closeCodeModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div class="code-modal-body">
+      <label>Language</label>
+      <select id="codeLang">
+        <option value="javascript">JavaScript</option>
+        <option value="typescript">TypeScript</option>
+        <option value="python">Python</option>
+        <option value="java">Java</option>
+        <option value="cpp">C / C++</option>
+        <option value="csharp">C#</option>
+        <option value="go">Go</option>
+        <option value="rust">Rust</option>
+        <option value="php">PHP</option>
+        <option value="ruby">Ruby</option>
+        <option value="swift">Swift</option>
+        <option value="kotlin">Kotlin</option>
+        <option value="html">HTML</option>
+        <option value="css">CSS</option>
+        <option value="sql">SQL</option>
+        <option value="bash">Bash / Shell</option>
+        <option value="json">JSON</option>
+        <option value="xml">XML</option>
+        <option value="yaml">YAML</option>
+        <option value="markdown">Markdown</option>
+        <option value="dockerfile">Dockerfile</option>
+        <option value="plaintext">Plain Text</option>
+      </select>
+      <label>Code</label>
+      <textarea id="codeInput" placeholder="Paste or type your code here..." spellcheck="false"></textarea>
+    </div>
+    <div class="code-modal-foot">
+      <button class="cancel-m" onclick="closeCodeModal()">Cancel</button>
+      <button class="send-m" id="codeSendBtn" onclick="sendCode()">Send Code</button>
+    </div>
   </div>
 </div>
 
@@ -312,11 +396,37 @@ window.preToggleCam = function() {
 // ══════════════════════════════════════════════
 //  CHAT
 // ══════════════════════════════════════════════
-function addMsg(name, body, time, sys) {
+const LANG_LABELS = { javascript: "JavaScript", typescript: "TypeScript", python: "Python", java: "Java", cpp: "C/C++", csharp: "C#", go: "Go", rust: "Rust", php: "PHP", ruby: "Ruby", swift: "Swift", kotlin: "Kotlin", html: "HTML", css: "CSS", sql: "SQL", bash: "Bash", json: "JSON", xml: "XML", yaml: "YAML", markdown: "Markdown", dockerfile: "Dockerfile", plaintext: "Plain Text" };
+
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+function addMsg(name, body, time, sys, code, lang) {
   const d = document.createElement("div"); d.className = "msg" + (sys ? " sys" : "");
-  d.innerHTML = sys ? `<div class="mb">${body}</div>` : `<div class="mh"><span class="mn">${name}</span><span class="mt">${ts(time)}</span></div><div class="mb">${body}</div>`;
-  $("msgs").appendChild(d); $("msgs").scrollTop = $("msgs").scrollHeight;
+  let html = "";
+  if (sys) {
+    html = `<div class="mb">${body}</div>`;
+  } else {
+    html = `<div class="mh"><span class="mn">${esc(name)}</span><span class="mt">${ts(time)}</span></div>`;
+    if (body) html += `<div class="mb">${esc(body)}</div>`;
+    if (code) {
+      const langLabel = LANG_LABELS[lang] || lang || "Code";
+      const id = "cb_" + Math.random().toString(36).slice(2, 8);
+      html += `<div class="code-wrap"><div class="code-head"><span>${esc(langLabel)}</span><button onclick="copyCode('${id}')">Copy</button></div><pre><code id="${id}" class="language-${esc(lang || "plaintext")}">${esc(code)}</code></pre></div>`;
+    }
+  }
+  d.innerHTML = html;
+  $("msgs").appendChild(d);
+  // Apply syntax highlighting to any new code blocks
+  const codeEl = d.querySelector("code");
+  if (codeEl) try { hljs.highlightElement(codeEl); } catch {}
+  $("msgs").scrollTop = $("msgs").scrollHeight;
 }
+
+window.copyCode = function(id) {
+  const el = $(id);
+  if (el) navigator.clipboard.writeText(el.textContent).catch(() => {});
+};
+
 window.toggleChat = function() {
   chatOpen = !chatOpen;
   $("chatPanel").classList.toggle("open", chatOpen);
@@ -329,6 +439,38 @@ window.sendChat = function() {
   addMsg(myName + " (You)", v, Date.now());
   $("chatIn").value = "";
 };
+
+// ── Code Modal ──
+window.openCodeModal = function() {
+  $("codeModal").classList.add("show");
+  $("codeInput").value = "";
+  $("codeInput").focus();
+};
+window.closeCodeModal = function() {
+  $("codeModal").classList.remove("show");
+};
+window.sendCode = function() {
+  const code = $("codeInput").value; if (!code.trim()) return;
+  const lang = $("codeLang").value;
+  send({ type: "chat", body: "", code, lang });
+  addMsg(myName + " (You)", "", Date.now(), false, code, lang);
+  closeCodeModal();
+  if (!chatOpen) toggleChat();
+};
+
+// Tab key inserts spaces in the code textarea
+document.addEventListener("DOMContentLoaded", () => {
+  const ta = $("codeInput");
+  if (ta) ta.addEventListener("keydown", e => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const s = ta.selectionStart, end = ta.selectionEnd;
+      ta.value = ta.value.substring(0, s) + "  " + ta.value.substring(end);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+    }
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { sendCode(); }
+  });
+});
 
 // ══════════════════════════════════════════════
 //  MEDIA STATE UI
@@ -585,7 +727,7 @@ window.joinRoom = async function() {
       case "screen-ice-candidate": await handleScreenIce(m.from, m.candidate, m.role); break;
       case "screen-started": addMsg(null, `${peers.get(m.peerId)?.displayName || "Someone"} started screen sharing`, Date.now(), true); break;
       case "screen-stopped": removeScreenTile(m.peerId); addMsg(null, `${peers.get(m.peerId)?.displayName || "Someone"} stopped sharing`, Date.now(), true); break;
-      case "chat": addMsg(m.displayName, m.body, m.ts); sndMsg(); if (!chatOpen) { unread++; $("chatBtn").classList.add("has-dot"); } break;
+      case "chat": addMsg(m.displayName, m.body, m.ts, false, m.code, m.lang); sndMsg(); if (!chatOpen) { unread++; $("chatBtn").classList.add("has-dot"); } break;
       case "media-state": { const p = peers.get(m.peerId); if (p) { p.micOn = m.micOn; p.camOn = m.camOn; tileState(m.peerId, m.micOn, m.camOn, p.displayName); } break; }
       case "recording-state": {
         const who = peers.get(m.peerId)?.displayName || "Someone";

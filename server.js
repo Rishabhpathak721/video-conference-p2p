@@ -108,10 +108,12 @@ wss.on("connection", (ws) => {
       case "chat": {
         const sender = rooms.get(roomId)?.get(peerId);
         if (!sender) break;
-        broadcast(roomId, peerId, {
+        const chatMsg = {
           type: "chat", from: peerId, displayName: sender.displayName,
           body: msg.body, ts: Date.now(),
-        });
+        };
+        if (msg.code) { chatMsg.code = msg.code; chatMsg.lang = msg.lang || "plaintext"; }
+        broadcast(roomId, peerId, chatMsg);
         break;
       }
 
