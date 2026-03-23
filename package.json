@@ -1,15 +1,20 @@
 {
   "name": "video-conference-p2p",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed"
   },
   "dependencies": {
     "ws": "^8.18.0"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }
