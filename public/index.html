@@ -18,14 +18,16 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 button { font-family: inherit; }
 
 /* ── Join Screen ──────────────────────────── */
-#joinScreen { display: flex; align-items: center; justify-content: center; height: 100vh; height: 100dvh; padding: 20px; background: radial-gradient(ellipse at 50% 0%, #1e293b 0%, var(--bg) 70%); }
+#joinScreen { display: flex; align-items: center; justify-content: center; height: 100vh; height: 100dvh; padding: 24px; background: radial-gradient(ellipse at 30% 20%, #1e293b 0%, var(--bg) 60%); }
 #joinScreen.hidden { display: none; }
-.join-card { background: var(--surface); border-radius: 24px; padding: 0; width: 100%; max-width: 480px; box-shadow: 0 25px 80px rgba(0,0,0,.6); overflow: hidden; border: 1px solid rgba(255,255,255,.04); }
-.join-header { padding: 28px 32px 0; }
-.join-header h1 { font-size: 26px; background: linear-gradient(135deg, var(--blue), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -.3px; }
+.join-card { background: var(--surface); border-radius: 24px; padding: 0; width: 100%; max-width: 860px; box-shadow: 0 25px 80px rgba(0,0,0,.6); overflow: hidden; border: 1px solid rgba(255,255,255,.05); display: flex; flex-direction: row; }
+
+.join-left { flex: 1.2; display: flex; flex-direction: column; padding: 28px; background: linear-gradient(160deg, #1a2236 0%, var(--surface) 100%); }
+.join-left .join-header { margin-bottom: 20px; }
+.join-header h1 { font-size: 28px; background: linear-gradient(135deg, var(--blue), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -.3px; font-weight: 700; }
 .join-header .sub { color: var(--text3); font-size: 13px; margin-top: 4px; }
 
-.preview-area { position: relative; margin: 20px 24px 0; border-radius: 16px; overflow: hidden; background: #000; aspect-ratio: 16/9; }
+.preview-area { position: relative; border-radius: 16px; overflow: hidden; background: #000; aspect-ratio: 16/9; flex-shrink: 0; }
 .preview-area video { width: 100%; height: 100%; object-fit: cover; display: block; transform: scaleX(-1); }
 .preview-ph { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #111827; transition: opacity .3s; }
 .preview-ph svg { width: 52px; height: 52px; color: #334155; }
@@ -45,7 +47,10 @@ button { font-family: inherit; }
 .pc-btn.off { background: rgba(220,38,38,.85); color: #fff; }
 .pc-btn.off:hover { background: rgba(185,28,28,.9); }
 
-.join-form { padding: 20px 28px 28px; }
+.join-right { flex: 0.8; display: flex; flex-direction: column; justify-content: center; padding: 36px 32px; border-left: 1px solid rgba(255,255,255,.04); }
+.join-right h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.join-right .sub2 { color: var(--text3); font-size: 12px; margin-bottom: 22px; }
+
 .join-form label { display: block; font-size: 11px; color: var(--text3); margin: 0 0 5px; text-transform: uppercase; letter-spacing: .6px; font-weight: 700; }
 .join-form .field + .field { margin-top: 14px; }
 .join-form input { width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 15px; outline: none; transition: border .2s; }
@@ -171,10 +176,14 @@ button { font-family: inherit; }
 .cinput .code-trigger:hover { background: #475569; color: var(--text); }
 .cinput .code-trigger svg { width: 18px; height: 18px; }
 
+@media (max-width: 720px) {
+  .join-card { flex-direction: column; max-width: 440px; }
+  .join-left { padding: 24px 24px 16px; }
+  .join-right { padding: 0 24px 24px; border-left: none; border-top: 1px solid rgba(255,255,255,.04); }
+  .join-right h2, .join-right .sub2 { display: none; }
+}
 @media (max-width: 640px) {
   .chat.open { width: 100%; position: absolute; inset: 0; z-index: 20; }
-  .grid.g2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-  .grid.has-screen { grid-template-columns: 1fr; grid-template-rows: 2fr 1fr; }
 }
 </style>
 </head>
@@ -183,28 +192,34 @@ button { font-family: inherit; }
 <!-- ═══ JOIN ═══ -->
 <div id="joinScreen">
   <div class="join-card">
-    <div class="join-header">
-      <h1>Video Conference</h1>
-      <p class="sub">Free, open-source video calls. No sign-up needed.</p>
-    </div>
-    <div class="preview-area">
-      <video id="previewVid" autoplay playsinline muted></video>
-      <div class="preview-ph" id="previewPh">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-        <span>Click below to start your camera</span>
+    <div class="join-left">
+      <div class="join-header">
+        <h1>Video Conference</h1>
+        <p class="sub">Free, open-source video calls. No sign-up needed.</p>
       </div>
-      <div class="preview-cam-off" id="previewCamOff"><div class="avatar" id="previewAvatar">?</div><div class="aname">Camera off</div></div>
-      <div class="preview-controls" id="previewCtrls">
-        <button class="pc-btn on" id="preMicBtn" onclick="preToggleMic()" title="Microphone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 003-3V4.5a3 3 0 10-6 0v8.25a3 3 0 003 3z"/></svg></button>
-        <button class="pc-btn on" id="preCamBtn" onclick="preToggleCam()" title="Camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25z"/></svg></button>
+      <div class="preview-area">
+        <video id="previewVid" autoplay playsinline muted></video>
+        <div class="preview-ph" id="previewPh">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+          <span>Click below to start your camera</span>
+        </div>
+        <div class="preview-cam-off" id="previewCamOff"><div class="avatar" id="previewAvatar">?</div><div class="aname">Camera off</div></div>
+        <div class="preview-controls" id="previewCtrls">
+          <button class="pc-btn on" id="preMicBtn" onclick="preToggleMic()" title="Microphone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 003-3V4.5a3 3 0 10-6 0v8.25a3 3 0 003 3z"/></svg></button>
+          <button class="pc-btn on" id="preCamBtn" onclick="preToggleCam()" title="Camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25z"/></svg></button>
+        </div>
       </div>
+      <button class="btn btn-g" id="startCamBtn" onclick="startCamera()" style="margin-top:16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25z"/></svg>Start Camera</button>
     </div>
-    <div class="join-form">
-      <button class="btn btn-g" id="startCamBtn" onclick="startCamera()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25z"/></svg>Start Camera</button>
-      <div class="field"><label>Your Name</label><input id="nameIn" placeholder="Enter your name"/></div>
-      <div class="field"><label>Room ID</label><input id="roomIn" placeholder="room1" value="room1"/></div>
-      <button class="btn btn-p" id="joinBtn" onclick="joinRoom()" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>Join Room</button>
-      <div id="joinStatus"></div>
+    <div class="join-right">
+      <h2>Ready to join?</h2>
+      <p class="sub2">Enter your details and hop into a room.</p>
+      <div class="join-form">
+        <div class="field"><label>Your Name</label><input id="nameIn" placeholder="Enter your name"/></div>
+        <div class="field"><label>Room ID</label><input id="roomIn" placeholder="room1" value="room1"/></div>
+        <button class="btn btn-p" id="joinBtn" onclick="joinRoom()" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>Join Room</button>
+        <div id="joinStatus"></div>
+      </div>
     </div>
   </div>
 </div>
