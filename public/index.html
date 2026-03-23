@@ -51,17 +51,18 @@ button { font-family: inherit; }
 .main { flex: 1; display: flex; overflow: hidden; position: relative; }
 
 /* ── Video Grid ───────────────────────────── */
-.grid { flex: 1; display: grid; gap: 6px; padding: 6px; overflow: hidden; align-content: center; justify-items: center; grid-template-columns: 1fr; }
-.grid.g2 { grid-template-columns: 1fr 1fr; }
-.grid.g3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-.grid.g4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-.grid.has-screen { grid-template-columns: 3fr 1fr; grid-template-rows: 1fr; align-items: start; }
-.grid.has-screen .screen-tile { grid-row: 1 / -1; }
+.grid { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; overflow: hidden; align-items: center; align-content: center; justify-content: center; }
+.grid .tile { flex: 1 1 calc(50% - 6px); max-width: calc(50% - 3px); min-width: 200px; }
+.grid .tile:only-child { max-width: 80%; }
+.grid.has-screen { flex-wrap: nowrap; }
+.grid.has-screen .screen-tile { flex: 3 1 0; max-width: none; min-width: 0; }
+.grid.has-screen .cam-col { flex: 1 1 0; min-width: 160px; max-width: 280px; display: flex; flex-direction: column; gap: 6px; }
+.grid.has-screen .cam-col .tile { flex: none; max-width: 100%; min-width: 0; width: 100%; }
 
-.tile { position: relative; background: var(--surface); border-radius: var(--radius); overflow: hidden; width: 100%; aspect-ratio: 16/9; max-height: 100%; }
+.tile { position: relative; background: var(--surface); border-radius: var(--radius); overflow: hidden; width: 100%; aspect-ratio: 16/9; }
 .tile video { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
 .tile.local video { transform: scaleX(-1); }
-.tile.screen-tile { border: 2px solid var(--blue); }
+.tile.screen-tile { border: 2px solid var(--blue); aspect-ratio: auto; max-height: 100%; }
 .tile.screen-tile video { object-fit: contain; background: #111; }
 .tag { position: absolute; bottom: 6px; left: 6px; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); color: #fff; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
 .tag svg { width: 12px; height: 12px; flex-shrink: 0; }
@@ -212,10 +213,24 @@ function ts(d) { return new Date(d).toLocaleTimeString([], { hour: "2-digit", mi
 function send(m) { if (ws?.readyState === 1) ws.send(JSON.stringify(m)); }
 
 function updateGrid() {
-  const n = $("grid").querySelectorAll(".tile").length;
-  const hasScreen = !!$("grid").querySelector(".screen-tile");
   const g = $("grid");
-  g.className = "grid" + (hasScreen ? " has-screen" : n === 2 ? " g2" : n === 3 || n === 4 ? " g3" : n > 4 ? " g4" : "");
+  const hasScreen = !!g.querySelector(".screen-tile");
+  g.className = "grid" + (hasScreen ? " has-screen" : "");
+
+  // When screen sharing, group camera tiles into a sidebar column
+  const existingCol = g.querySelector(".cam-col");
+  if (hasScreen) {
+    let col = existingCol;
+    if (!col) { col = document.createElement("div"); col.className = "cam-col"; g.appendChild(col); }
+    const camTiles = [...g.querySelectorAll(".tile:not(.screen-tile)")];
+    camTiles.forEach(t => col.appendChild(t));
+  } else if (existingCol) {
+    // Move tiles out of the column back to grid
+    const tiles = [...existingCol.querySelectorAll(".tile")];
+    tiles.forEach(t => g.appendChild(t));
+    existingCol.remove();
+  }
+
   const total = peers.size + 1;
   $("peerCount").textContent = `${total} participant${total !== 1 ? "s" : ""}`;
 }
@@ -277,20 +292,22 @@ function tileState(pid, mic, cam, name) {
 window.toggleScreen = async function() {
   if (screenSharing) { stopScreen(); return; }
   try {
-    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: "always" }, audio: true }).catch(
+      () => navigator.mediaDevices.getDisplayMedia({ video: true })
+    );
     screenSharing = true;
     $("screenBtn").classList.add("active");
     send({ type: "screen-started" });
 
-    // Add local screen tile
     const tile = document.createElement("div"); tile.className = "tile screen-tile"; tile.id = "t-myscreen";
-    const vid = document.createElement("video"); vid.autoplay = true; vid.playsInline = true; vid.srcObject = screenStream; tile.appendChild(vid);
+    const vid = document.createElement("video"); vid.autoplay = true; vid.playsInline = true; vid.muted = true; vid.srcObject = screenStream; tile.appendChild(vid);
     const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "Your screen"; tile.appendChild(tag);
     $("grid").prepend(tile);
     updateGrid();
 
-    // Send screen to all peers via separate PeerConnection
-    for (const [pid, peer] of peers) sendScreenTo(pid, peer);
+    for (const [pid] of peers) {
+      try { await sendScreenTo(pid); } catch (e) { console.error("sendScreenTo failed:", pid, e); }
+    }
 
     screenStream.getVideoTracks()[0].onended = () => stopScreen();
   } catch (e) { console.warn("Screen share cancelled:", e.message); }
@@ -303,16 +320,26 @@ function stopScreen() {
   $("screenBtn").classList.remove("active");
   const tile = $("t-myscreen"); if (tile) tile.remove();
   send({ type: "screen-stopped" });
-  for (const [, peer] of peers) { if (peer.screenPc) { peer.screenPc.close(); peer.screenPc = null; } }
+  for (const [, peer] of peers) {
+    if (peer.screenPcSend) { peer.screenPcSend.close(); peer.screenPcSend = null; }
+  }
   updateGrid();
 }
 
 async function sendScreenTo(pid) {
   const peer = peers.get(pid); if (!peer || !screenStream) return;
+  if (peer.screenPcSend) { peer.screenPcSend.close(); peer.screenPcSend = null; }
+
   const pc = new RTCPeerConnection({ iceServers: ICE });
-  peer.screenPc = pc;
+  peer.screenPcSend = pc;
+
   for (const track of screenStream.getTracks()) pc.addTrack(track, screenStream);
-  pc.onicecandidate = ev => { if (ev.candidate) send({ type: "screen-ice-candidate", to: pid, candidate: ev.candidate }); };
+
+  pc.onicecandidate = ev => {
+    if (ev.candidate) send({ type: "screen-ice-candidate", to: pid, candidate: ev.candidate, role: "sender" });
+  };
+  pc.onconnectionstatechange = () => console.log(`Screen→${pid}: ${pc.connectionState}`);
+
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   send({ type: "screen-offer", to: pid, sdp: pc.localDescription });
@@ -320,9 +347,13 @@ async function sendScreenTo(pid) {
 
 async function handleScreenOffer(from, sdp) {
   const peer = peers.get(from); if (!peer) return;
+  if (peer.screenPcRecv) { peer.screenPcRecv.close(); }
+
   const pc = new RTCPeerConnection({ iceServers: ICE });
-  peer.screenPc = pc;
+  peer.screenPcRecv = pc;
+
   const stream = new MediaStream();
+
   pc.ontrack = ev => {
     stream.addTrack(ev.track);
     let tile = $(`t-screen-${from}`);
@@ -333,9 +364,16 @@ async function handleScreenOffer(from, sdp) {
       $("grid").prepend(tile);
       updateGrid();
     }
-    tile.querySelector("video").srcObject = stream;
+    const v = tile.querySelector("video");
+    v.srcObject = stream;
+    v.play().catch(() => {});
   };
-  pc.onicecandidate = ev => { if (ev.candidate) send({ type: "screen-ice-candidate", to: from, candidate: ev.candidate }); };
+
+  pc.onicecandidate = ev => {
+    if (ev.candidate) send({ type: "screen-ice-candidate", to: from, candidate: ev.candidate, role: "receiver" });
+  };
+  pc.onconnectionstatechange = () => console.log(`Screen←${from}: ${pc.connectionState}`);
+
   await pc.setRemoteDescription(new RTCSessionDescription(sdp));
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
@@ -344,18 +382,21 @@ async function handleScreenOffer(from, sdp) {
 
 async function handleScreenAnswer(from, sdp) {
   const peer = peers.get(from);
-  if (peer?.screenPc) await peer.screenPc.setRemoteDescription(new RTCSessionDescription(sdp));
+  if (peer?.screenPcSend) await peer.screenPcSend.setRemoteDescription(new RTCSessionDescription(sdp));
 }
 
-async function handleScreenIce(from, candidate) {
-  const peer = peers.get(from);
-  if (peer?.screenPc) try { await peer.screenPc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
+async function handleScreenIce(from, candidate, role) {
+  const peer = peers.get(from); if (!peer) return;
+  // Route ICE to the correct PeerConnection
+  const pc = role === "sender" ? peer.screenPcRecv : peer.screenPcSend;
+  if (pc) try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
 }
 
 function removeScreenTile(pid) {
   const tile = $(`t-screen-${pid}`); if (tile) tile.remove();
   const peer = peers.get(pid);
-  if (peer?.screenPc) { peer.screenPc.close(); peer.screenPc = null; }
+  if (peer?.screenPcRecv) { peer.screenPcRecv.close(); peer.screenPcRecv = null; }
+  if (peer?.screenPcSend) { peer.screenPcSend.close(); peer.screenPcSend = null; }
   updateGrid();
 }
 
@@ -473,7 +514,7 @@ window.joinRoom = async function() {
       case "ice-candidate": await onIce(m.from, m.candidate); break;
       case "screen-offer": await handleScreenOffer(m.from, m.sdp); break;
       case "screen-answer": await handleScreenAnswer(m.from, m.sdp); break;
-      case "screen-ice-candidate": await handleScreenIce(m.from, m.candidate); break;
+      case "screen-ice-candidate": await handleScreenIce(m.from, m.candidate, m.role); break;
       case "screen-started": addMsg(null, `${peers.get(m.peerId)?.displayName || "Someone"} started screen sharing`, Date.now(), true); break;
       case "screen-stopped": removeScreenTile(m.peerId); addMsg(null, `${peers.get(m.peerId)?.displayName || "Someone"} stopped sharing`, Date.now(), true); break;
       case "chat": addMsg(m.displayName, m.body, m.ts); sndMsg(); if (!chatOpen) { unread++; $("chatBtn").classList.add("has-dot"); } break;
@@ -528,7 +569,7 @@ window.toggleCam = function() {
 // ══════════════════════════════════════════════
 async function mkPeer(pid, name, initiator, pMic = true, pCam = true) {
   const pc = new RTCPeerConnection({ iceServers: ICE });
-  const entry = { pc, displayName: name, peerId: pid, micOn: pMic, camOn: pCam, screenPc: null };
+  const entry = { pc, displayName: name, peerId: pid, micOn: pMic, camOn: pCam, screenPcSend: null, screenPcRecv: null };
   peers.set(pid, entry);
   for (const t of localStream.getTracks()) pc.addTrack(t, localStream);
   const rs = new MediaStream();
@@ -557,7 +598,13 @@ async function onIce(from, c) { const p = peers.get(from); if (p) try { await p.
 
 function rmPeer(pid) {
   const p = peers.get(pid);
-  if (p) { addMsg(null, `${p.displayName} left`, Date.now(), true); p.pc.close(); if (p.screenPc) p.screenPc.close(); peers.delete(pid); }
+  if (p) {
+    addMsg(null, `${p.displayName} left`, Date.now(), true);
+    p.pc.close();
+    if (p.screenPcSend) p.screenPcSend.close();
+    if (p.screenPcRecv) p.screenPcRecv.close();
+    peers.delete(pid);
+  }
   const t = $(`t-${pid}`); if (t) t.remove();
   removeScreenTile(pid);
   updateGrid();
