@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Video Conference</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; min-height: 100dvh; }
+
+  /* ── Join Screen ─────────────────────────────── */
+  #join-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; min-height: 100dvh; padding: 20px; }
+  #join-screen.hidden { display: none; }
+  .join-card { background: #1e293b; border-radius: 16px; padding: 36px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+  .join-card h1 { font-size: 22px; margin-bottom: 6px; }
+  .join-card p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; }
+  .join-card label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; margin-top: 14px; }
+  .join-card input { width: 100%; padding: 10px 14px; border: 1px solid #334155; border-radius: 8px; background: #0f172a; color: #e2e8f0; font-size: 15px; outline: none; }
+  .join-card input:focus { border-color: #3b82f6; }
+  .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .btn-primary { margin-top: 20px; background: #3b82f6; color: white; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-primary:disabled { background: #475569; cursor: not-allowed; }
+  .btn-green { margin-top: 12px; background: #059669; color: white; }
+  .btn-green:hover { background: #047857; }
+  #joinStatus { margin-top: 12px; font-size: 13px; color: #94a3b8; min-height: 18px; }
+  #joinStatus.error { color: #f87171; }
+
+  .preview-wrap { margin-top: 16px; border-radius: 10px; overflow: hidden; background: #000; aspect-ratio: 16/9; }
+  .preview-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* ── Meeting Screen ──────────────────────────── */
+  #meeting-screen { display: none; flex-direction: column; height: 100vh; height: 100dvh; }
+  #meeting-screen.active { display: flex; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #1e293b; border-bottom: 1px solid #334155; flex-shrink: 0; }
+  .top-bar .room-name { font-weight: 600; font-size: 15px; }
+  .top-bar .peer-count { color: #94a3b8; font-size: 13px; }
+
+  .video-grid { flex: 1; display: grid; gap: 10px; padding: 10px; overflow: hidden;
+    grid-template-columns: 1fr; align-items: center; justify-items: center; }
+  .video-grid.two { grid-template-columns: 1fr 1fr; }
+  .video-grid.three { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  .video-grid.four { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+  .video-box { position: relative; background: #1e293b; border-radius: 12px; overflow: hidden; width: 100%; max-height: 100%; aspect-ratio: 16/9; }
+  .video-box video { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
+  .video-box .label { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,.65); color: white; padding: 3px 10px; border-radius: 6px; font-size: 12px; }
+  .video-box.local video { transform: scaleX(-1); }
+
+  .controls { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px; background: #1e293b; border-top: 1px solid #334155; flex-shrink: 0; }
+  .ctrl-btn { width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; background: #334155; color: #e2e8f0; transition: background .15s; }
+  .ctrl-btn:hover { background: #475569; }
+  .ctrl-btn.on { background: #3b82f6; }
+  .ctrl-btn.off { background: #dc2626; }
+  .ctrl-btn.leave { background: #dc2626; }
+  .ctrl-btn.leave:hover { background: #b91c1c; }
+
+  @media (max-width: 600px) {
+    .join-card { padding: 24px; }
+    .video-grid.two { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div id="join-screen">
+  <div class="join-card">
+    <h1>Video Conference</h1>
+    <p>Join a room to start a video call with others.</p>
+    <div class="preview-wrap">
+      <video id="previewVideo" autoplay playsinline muted></video>
+    </div>
+    <button class="btn btn-green" id="cameraBtn" onclick="startCamera()">Start Camera</button>
+    <label for="nameInput">Your Name</label>
+    <input id="nameInput" type="text" placeholder="Enter your name" />
+    <label for="roomInput">Room ID</label>
+    <input id="roomInput" type="text" placeholder="room1" value="room1" />
+    <button class="btn btn-primary" id="joinBtn" onclick="joinRoom()" disabled>Join Room</button>
+    <div id="joinStatus"></div>
+  </div>
+</div>
+
+<div id="meeting-screen">
+  <div class="top-bar">
+    <span class="room-name" id="roomLabel">Room</span>
+    <span class="peer-count" id="peerCount">1</span>
+  </div>
+  <div class="video-grid" id="videoGrid">
+    <div class="video-box local" id="localBox">
+      <video id="localVideo" autoplay playsinline muted></video>
+      <span class="label" id="localLabel">You</span>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn on" id="micBtn" onclick="toggleMic()" title="Mic">&#127908;</button>
+    <button class="ctrl-btn on" id="camBtn" onclick="toggleCam()" title="Camera">&#127909;</button>
+    <button class="ctrl-btn leave" onclick="leaveRoom()" title="Leave">&#128683;</button>
+  </div>
+</div>
+
+<script>
+const ICE_SERVERS = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
+  { urls: "stun:stun3.l.google.com:19302" },
+  { urls: "stun:stun4.l.google.com:19302" },
+];
+
+let ws = null;
+let localStream = null;
+let myPeerId = "";
+let myName = "";
+let roomId = "";
+let micOn = true;
+let camOn = true;
+
+// peerId → { pc: RTCPeerConnection, displayName }
+const peers = new Map();
+
+function $(id) { return document.getElementById(id); }
+
+function setStatus(msg, err) {
+  const el = $("joinStatus");
+  el.textContent = msg;
+  el.className = err ? "error" : "";
+}
+
+function updateGrid() {
+  const count = peers.size + 1;
+  const grid = $("videoGrid");
+  grid.className = "video-grid" + (count === 2 ? " two" : count === 3 ? " three" : count >= 4 ? " four" : "");
+  $("peerCount").textContent = `${count} participant${count !== 1 ? "s" : ""}`;
+}
+
+function sendMsg(msg) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+}
+
+// ── Camera ──────────────────────────────────────
+
+window.startCamera = async function() {
+  $("cameraBtn").disabled = true;
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    $("previewVideo").srcObject = localStream;
+    $("cameraBtn").style.display = "none";
+    $("joinBtn").disabled = false;
+    setStatus("Camera ready");
+  } catch (e) {
+    setStatus("Camera failed: " + e.message, true);
+    $("cameraBtn").disabled = false;
+    $("cameraBtn").textContent = "Retry Camera";
+  }
+};
+
+// ── Join / Leave ────────────────────────────────
+
+window.joinRoom = async function() {
+  if (!localStream) { setStatus("Start camera first", true); return; }
+  myName = $("nameInput").value.trim() || "Guest";
+  roomId = $("roomInput").value.trim() || "room1";
+  myPeerId = "p_" + Math.random().toString(36).slice(2, 8);
+
+  $("joinBtn").disabled = true;
+  setStatus("Connecting...");
+
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  ws = new WebSocket(`${proto}//${location.host}`);
+
+  ws.onopen = () => {
+    sendMsg({ type: "join", roomId, peerId: myPeerId, displayName: myName });
+    $("join-screen").classList.add("hidden");
+    $("meeting-screen").classList.add("active");
+    $("localVideo").srcObject = localStream;
+    $("localLabel").textContent = myName + " (You)";
+    $("roomLabel").textContent = "Room: " + roomId;
+    updateGrid();
+  };
+
+  ws.onmessage = async (ev) => {
+    const msg = JSON.parse(ev.data);
+
+    switch (msg.type) {
+      case "room-peers":
+        for (const p of msg.peers) await createPeer(p.peerId, p.displayName, true);
+        break;
+      case "peer-joined":
+        await createPeer(msg.peerId, msg.displayName, false);
+        break;
+      case "peer-left":
+        removePeer(msg.peerId);
+        break;
+      case "offer":
+        await handleOffer(msg.from, msg.sdp);
+        break;
+      case "answer":
+        await handleAnswer(msg.from, msg.sdp);
+        break;
+      case "ice-candidate":
+        await handleIceCandidate(msg.from, msg.candidate);
+        break;
+    }
+  };
+
+  ws.onerror = () => setStatus("Connection error", true);
+  ws.onclose = () => {};
+};
+
+window.leaveRoom = function() {
+  for (const [pid] of peers) removePeer(pid);
+  ws?.close();
+  ws = null;
+  $("meeting-screen").classList.remove("active");
+  $("join-screen").classList.remove("hidden");
+  $("joinBtn").disabled = false;
+  $("cameraBtn").style.display = "";
+  $("cameraBtn").disabled = false;
+  $("cameraBtn").textContent = "Start Camera";
+  $("previewVideo").srcObject = localStream;
+  setStatus("");
+};
+
+// ── Mic / Cam ───────────────────────────────────
+
+window.toggleMic = function() {
+  micOn = !micOn;
+  localStream?.getAudioTracks().forEach(t => t.enabled = micOn);
+  $("micBtn").className = "ctrl-btn " + (micOn ? "on" : "off");
+};
+
+window.toggleCam = function() {
+  camOn = !camOn;
+  localStream?.getVideoTracks().forEach(t => t.enabled = camOn);
+  $("camBtn").className = "ctrl-btn " + (camOn ? "on" : "off");
+};
+
+// ── WebRTC peer management ──────────────────────
+
+async function createPeer(peerId, displayName, initiator) {
+  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  peers.set(peerId, { pc, displayName });
+
+  // Add local tracks
+  for (const track of localStream.getTracks()) {
+    pc.addTrack(track, localStream);
+  }
+
+  // Remote tracks
+  const remoteStream = new MediaStream();
+  pc.ontrack = (ev) => {
+    remoteStream.addTrack(ev.track);
+    const vid = $(`vid-${peerId}`);
+    if (vid) { vid.srcObject = remoteStream; vid.play().catch(() => {}); }
+  };
+
+  // ICE candidates
+  pc.onicecandidate = (ev) => {
+    if (ev.candidate) {
+      sendMsg({ type: "ice-candidate", to: peerId, candidate: ev.candidate });
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+      console.warn(`Peer ${peerId} connection: ${pc.connectionState}`);
+    }
+  };
+
+  // Create video box
+  const box = document.createElement("div");
+  box.className = "video-box";
+  box.id = `box-${peerId}`;
+  const vid = document.createElement("video");
+  vid.id = `vid-${peerId}`;
+  vid.autoplay = true;
+  vid.playsInline = true;
+  vid.srcObject = remoteStream;
+  box.appendChild(vid);
+  const label = document.createElement("span");
+  label.className = "label";
+  label.textContent = displayName;
+  box.appendChild(label);
+  $("videoGrid").appendChild(box);
+  updateGrid();
+
+  // Only the initiator (the peer who was already in the room) creates the offer
+  if (initiator) {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    sendMsg({ type: "offer", to: peerId, sdp: pc.localDescription });
+  }
+}
+
+async function handleOffer(from, sdp) {
+  let peer = peers.get(from);
+  if (!peer) return;
+  await peer.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+  const answer = await peer.pc.createAnswer();
+  await peer.pc.setLocalDescription(answer);
+  sendMsg({ type: "answer", to: from, sdp: peer.pc.localDescription });
+}
+
+async function handleAnswer(from, sdp) {
+  const peer = peers.get(from);
+  if (!peer) return;
+  await peer.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+}
+
+async function handleIceCandidate(from, candidate) {
+  const peer = peers.get(from);
+  if (!peer) return;
+  try {
+    await peer.pc.addIceCandidate(new RTCIceCandidate(candidate));
+  } catch (e) {
+    console.warn("ICE candidate error:", e);
+  }
+}
+
+function removePeer(peerId) {
+  const peer = peers.get(peerId);
+  if (peer) { peer.pc.close(); peers.delete(peerId); }
+  const box = $(`box-${peerId}`);
+  if (box) box.remove();
+  updateGrid();
+}
+</script>
+</body>
+</html>
