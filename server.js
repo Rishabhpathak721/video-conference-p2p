@@ -7,7 +7,7 @@ import { WebSocketServer } from "ws";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT || "3001", 10);
 
-// Room state: roomId → Map<peerId, { ws, displayName }>
+// roomId → Map<peerId, { ws, displayName, micOn, camOn }>
 const rooms = new Map();
 
 const server = http.createServer((req, res) => {
@@ -37,6 +37,15 @@ const server = http.createServer((req, res) => {
 
 const wss = new WebSocketServer({ server });
 
+function broadcast(roomId, excludePeerId, msg) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  const data = JSON.stringify(msg);
+  for (const [pid, peer] of room) {
+    if (pid !== excludePeerId) peer.ws.send(data);
+  }
+}
+
 wss.on("connection", (ws) => {
   let peerId = null;
   let roomId = null;
@@ -54,19 +63,15 @@ wss.on("connection", (ws) => {
         if (!rooms.has(roomId)) rooms.set(roomId, new Map());
         const room = rooms.get(roomId);
 
-        // Tell new peer about existing peers
         const existing = [];
         for (const [pid, peer] of room) {
-          existing.push({ peerId: pid, displayName: peer.displayName });
+          existing.push({ peerId: pid, displayName: peer.displayName, micOn: peer.micOn, camOn: peer.camOn });
         }
         ws.send(JSON.stringify({ type: "room-peers", peers: existing }));
 
-        // Tell existing peers about the new peer
-        for (const [, peer] of room) {
-          peer.ws.send(JSON.stringify({ type: "peer-joined", peerId, displayName }));
-        }
+        room.set(peerId, { ws, displayName, micOn: true, camOn: true });
 
-        room.set(peerId, { ws, displayName });
+        broadcast(roomId, peerId, { type: "peer-joined", peerId, displayName });
         console.log(`[${roomId}] ${displayName} (${peerId}) joined — ${room.size} peers`);
         break;
       }
@@ -80,6 +85,35 @@ wss.on("connection", (ws) => {
         }
         break;
       }
+
+      case "chat": {
+        const room = rooms.get(roomId);
+        const sender = room?.get(peerId);
+        if (!sender) break;
+        broadcast(roomId, peerId, {
+          type: "chat",
+          from: peerId,
+          displayName: sender.displayName,
+          body: msg.body,
+          ts: Date.now(),
+        });
+        break;
+      }
+
+      case "media-state": {
+        const room = rooms.get(roomId);
+        const peer = room?.get(peerId);
+        if (!peer) break;
+        if (msg.micOn !== undefined) peer.micOn = msg.micOn;
+        if (msg.camOn !== undefined) peer.camOn = msg.camOn;
+        broadcast(roomId, peerId, {
+          type: "media-state",
+          peerId,
+          micOn: peer.micOn,
+          camOn: peer.camOn,
+        });
+        break;
+      }
     }
   });
 
@@ -91,9 +125,7 @@ wss.on("connection", (ws) => {
     room.delete(peerId);
     console.log(`[${roomId}] ${peerId} left — ${room.size} peers`);
 
-    for (const [, peer] of room) {
-      peer.ws.send(JSON.stringify({ type: "peer-left", peerId }));
-    }
+    broadcast(roomId, null, { type: "peer-left", peerId });
 
     if (room.size === 0) rooms.delete(roomId);
   });
