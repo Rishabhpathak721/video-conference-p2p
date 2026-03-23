@@ -9,6 +9,8 @@ const PORT = parseInt(process.env.PORT || "3001", 10);
 
 // roomId → Map<peerId, PeerState>
 const rooms = new Map();
+// roomId → { code: string, lang: string }
+const roomCode = new Map();
 
 function getRoom(id) {
   if (!rooms.has(id)) rooms.set(id, new Map());
@@ -81,6 +83,10 @@ wss.on("connection", (ws) => {
         }
         ws.send(JSON.stringify({ type: "room-peers", peers: existing }));
 
+        // Send current shared code state to the new joiner
+        const cs = roomCode.get(roomId);
+        if (cs && cs.code) ws.send(JSON.stringify({ type: "code-state", code: cs.code, lang: cs.lang }));
+
         room.set(peerId, { ws, displayName, micOn: true, camOn: true, screenOn: false });
         broadcast(roomId, peerId, { type: "peer-joined", peerId, displayName });
         console.log(`[${roomId}] ${displayName} joined (${room.size})`);
@@ -108,12 +114,26 @@ wss.on("connection", (ws) => {
       case "chat": {
         const sender = rooms.get(roomId)?.get(peerId);
         if (!sender) break;
-        const chatMsg = {
+        broadcast(roomId, peerId, {
           type: "chat", from: peerId, displayName: sender.displayName,
           body: msg.body, ts: Date.now(),
-        };
-        if (msg.code) { chatMsg.code = msg.code; chatMsg.lang = msg.lang || "plaintext"; }
-        broadcast(roomId, peerId, chatMsg);
+        });
+        break;
+      }
+
+      case "code-update": {
+        if (!roomCode.has(roomId)) roomCode.set(roomId, { code: "", lang: "javascript" });
+        const state = roomCode.get(roomId);
+        state.code = msg.code ?? "";
+        if (msg.lang) state.lang = msg.lang;
+        broadcast(roomId, peerId, { type: "code-update", code: state.code, lang: state.lang, from: peerId });
+        break;
+      }
+
+      case "code-lang": {
+        if (!roomCode.has(roomId)) roomCode.set(roomId, { code: "", lang: "javascript" });
+        roomCode.get(roomId).lang = msg.lang;
+        broadcast(roomId, peerId, { type: "code-lang", lang: msg.lang });
         break;
       }
 
@@ -154,7 +174,7 @@ wss.on("connection", (ws) => {
     if (!room) return;
     room.delete(peerId);
     broadcast(roomId, null, { type: "peer-left", peerId });
-    if (room.size === 0) rooms.delete(roomId);
+    if (room.size === 0) { rooms.delete(roomId); roomCode.delete(roomId); }
     console.log(`[${roomId}] ${peerId} left (${room.size})`);
   });
 });
