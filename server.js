@@ -48,6 +48,26 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (url.pathname === "/api/execute" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", async () => {
+      try {
+        const upstream = await fetch(
+          "https://ce.judge0.com/submissions?base64_encoded=false&wait=true",
+          { method: "POST", headers: { "Content-Type": "application/json" }, body }
+        );
+        const data = await upstream.text();
+        res.writeHead(upstream.status, { "Content-Type": "application/json" });
+        res.end(data);
+      } catch (e) {
+        res.writeHead(502, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
   res.writeHead(404);
   res.end("Not found");
 });
