@@ -137,25 +137,31 @@ button { font-family: inherit; }
 .csend:hover { background: #2563eb; }
 .csend svg { width: 18px; height: 18px; }
 
-/* ── Code Editor Modal ────────────────────── */
-.code-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 24px; }
+/* ── Code Editor Fullscreen ───────────────── */
+.code-overlay { position: fixed; inset: 0; background: #0d1117; display: none; z-index: 100; }
 .code-overlay.open { display: flex; }
-.code-panel { width: 100%; max-width: 780px; height: 80vh; max-height: 600px; background: #0d1117; border-radius: 16px; border: 1px solid #21262d; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,.6); }
+.code-panel { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
 
-.cp-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #161b22; border-bottom: 1px solid #21262d; flex-shrink: 0; }
+.cp-head { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #161b22; border-bottom: 1px solid #21262d; flex-shrink: 0; }
 .cp-head .cp-icon { color: var(--blue); display: flex; }
 .cp-head .cp-icon svg { width: 20px; height: 20px; }
-.cp-head .cp-title { font-size: 15px; font-weight: 600; flex: 1; color: #e6edf3; }
+.cp-head .cp-title { font-size: 15px; font-weight: 600; color: #e6edf3; }
+.cp-head .cp-spacer { flex: 1; }
 .cp-head select { padding: 6px 12px; border: 1px solid #30363d; border-radius: 6px; background: #0d1117; color: #e6edf3; font-size: 12px; font-family: inherit; outline: none; cursor: pointer; }
 .cp-head select:focus { border-color: var(--blue); }
+.cp-run { background: linear-gradient(135deg, #059669, var(--green)); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 5px; transition: all .15s; }
+.cp-run:hover { box-shadow: 0 2px 10px rgba(16,185,129,.3); }
+.cp-run:disabled { opacity: .5; cursor: not-allowed; }
+.cp-run svg { width: 14px; height: 14px; }
 .cp-head .cp-act { background: none; border: 1px solid #30363d; color: #8b949e; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 5px; }
 .cp-head .cp-act:hover { background: #21262d; color: #e6edf3; }
 .cp-head .cp-act svg { width: 14px; height: 14px; }
-.cp-head .cp-close { background: none; border: none; color: #8b949e; cursor: pointer; padding: 4px; border-radius: 6px; display: flex; }
-.cp-head .cp-close:hover { background: #21262d; color: #e6edf3; }
-.cp-head .cp-close svg { width: 18px; height: 18px; }
+.cp-back { background: none; border: 1px solid #30363d; color: #e6edf3; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; }
+.cp-back:hover { background: #21262d; }
+.cp-back svg { width: 16px; height: 16px; }
 
-.cp-lines { display: flex; flex: 1; overflow: hidden; }
+.cp-body { display: flex; flex: 1; overflow: hidden; }
+.cp-edit-area { flex: 1; display: flex; overflow: hidden; min-width: 0; }
 .cp-gutter { width: 48px; padding: 12px 0; background: #0d1117; border-right: 1px solid #21262d; overflow: hidden; flex-shrink: 0; user-select: none; }
 .cp-gutter .ln { display: block; text-align: right; padding: 0 10px; font-size: 13px; line-height: 1.6; color: #484f58; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
 .cp-editor { flex: 1; padding: 12px 16px; background: #0d1117; color: #e6edf3; font-size: 13px; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; line-height: 1.6; border: none; outline: none; resize: none; tab-size: 2; white-space: pre; overflow: auto; }
@@ -163,14 +169,25 @@ button { font-family: inherit; }
 .cp-editor::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
 .cp-editor::-webkit-scrollbar-corner { background: #0d1117; }
 
-.cp-foot { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: #161b22; border-top: 1px solid #21262d; flex-shrink: 0; font-size: 11px; color: #484f58; border-radius: 0 0 16px 16px; }
+.cp-output { flex: 0 0 38%; max-width: 480px; display: flex; flex-direction: column; border-left: 1px solid #21262d; background: #161b22; }
+.cp-out-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid #21262d; flex-shrink: 0; }
+.cp-out-head span { font-size: 12px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: .5px; }
+.cp-out-head button { background: none; border: 1px solid #30363d; color: #8b949e; font-size: 10px; padding: 3px 10px; border-radius: 4px; cursor: pointer; font-family: inherit; }
+.cp-out-head button:hover { background: #21262d; color: #e6edf3; }
+.cp-out-pre { flex: 1; margin: 0; padding: 12px 14px; font-size: 13px; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; line-height: 1.6; color: #e6edf3; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+.cp-out-pre::-webkit-scrollbar { width: 6px; }
+.cp-out-pre::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+.cp-out-pre .err { color: #f87171; }
+.cp-out-pre .info { color: #8b949e; font-style: italic; }
+
+.cp-foot { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: #161b22; border-top: 1px solid #21262d; flex-shrink: 0; font-size: 11px; color: #484f58; }
 .cp-foot .cp-status { display: flex; align-items: center; gap: 6px; }
 .cp-foot .cp-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 .cp-foot .cp-info { color: #8b949e; }
 
 @media (max-width: 640px) {
-  .code-panel { max-width: none; height: 100vh; max-height: none; border-radius: 0; }
-  .code-overlay { padding: 0; }
+  .cp-body { flex-direction: column; }
+  .cp-output { flex: 0 0 40%; max-width: none; border-left: none; border-top: 1px solid #21262d; }
 }
 @media (max-width: 720px) {
   .join-card { flex-direction: column; max-width: 440px; }
@@ -259,12 +276,13 @@ button { font-family: inherit; }
   </div>
 </div>
 
-<!-- ═══ CODE EDITOR MODAL ═══ -->
-<div class="code-overlay" id="codeOverlay" onclick="if(event.target===this)toggleCode()">
+<!-- ═══ CODE EDITOR FULLSCREEN ═══ -->
+<div class="code-overlay" id="codeOverlay">
   <div class="code-panel" id="codePanel">
     <div class="cp-head">
       <span class="cp-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/><path d="m13 4-2 16"/></svg></span>
       <span class="cp-title">Code Editor</span>
+      <span class="cp-spacer"></span>
       <select id="cpLang" onchange="onLangChange()">
         <option value="javascript">JavaScript</option>
         <option value="typescript">TypeScript</option>
@@ -288,13 +306,20 @@ button { font-family: inherit; }
         <option value="dockerfile">Dockerfile</option>
         <option value="plaintext">Plain Text</option>
       </select>
+      <button class="cp-run" id="cpRunBtn" onclick="runCode()"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>Run</button>
       <button class="cp-act" onclick="copyEditorCode()" title="Copy code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button>
       <button class="cp-act" onclick="clearEditorCode()" title="Clear code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>Clear</button>
-      <button class="cp-close" onclick="toggleCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
+      <button class="cp-back" onclick="toggleCode()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>Back to Meeting</button>
     </div>
-    <div class="cp-lines">
-      <div class="cp-gutter" id="cpGutter"><span class="ln">1</span></div>
-      <textarea class="cp-editor" id="cpEditor" spellcheck="false" placeholder="// Start typing or paste code here..."></textarea>
+    <div class="cp-body">
+      <div class="cp-edit-area">
+        <div class="cp-gutter" id="cpGutter"><span class="ln">1</span></div>
+        <textarea class="cp-editor" id="cpEditor" spellcheck="false" placeholder="// Start typing or paste code here..."></textarea>
+      </div>
+      <div class="cp-output" id="cpOutput">
+        <div class="cp-out-head"><span>Output</span><button onclick="clearOutput()">Clear</button></div>
+        <pre class="cp-out-pre" id="cpOutPre"></pre>
+      </div>
     </div>
     <div class="cp-foot">
       <div class="cp-status"><span class="cp-dot"></span><span id="cpSyncStatus">Synced</span></div>
@@ -440,6 +465,10 @@ window.toggleCode = function() {
   codeOpen = !codeOpen;
   $("codeOverlay").classList.toggle("open", codeOpen);
   $("codeBtn").classList.toggle("active", codeOpen);
+  const hide = codeOpen ? "none" : "";
+  document.querySelector(".topbar").style.display = hide;
+  document.querySelector(".main").style.display = hide;
+  document.querySelector(".controls").style.display = hide;
   if (codeOpen) $("cpEditor").focus();
 };
 
@@ -518,6 +547,59 @@ document.addEventListener("DOMContentLoaded", () => {
   ta.addEventListener("scroll", () => { $("cpGutter").scrollTop = ta.scrollTop; });
   updateGutter();
 });
+
+const PISTON_LANG = { cpp: "c++", csharp: "csharp", bash: "bash" };
+const CLIENT_LANGS = new Set(["javascript", "typescript"]);
+
+window.runCode = async function() {
+  const code = $("cpEditor").value.trim();
+  const out = $("cpOutPre");
+  const btn = $("cpRunBtn");
+  if (!code) { out.innerHTML = '<span class="info">Nothing to run.</span>'; return; }
+  btn.disabled = true; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="6,3 20,12 6,21"/></svg>Running…';
+  out.textContent = "";
+
+  const lang = $("cpLang").value;
+  try {
+    if (CLIENT_LANGS.has(lang)) {
+      const logs = [];
+      const fakeConsole = { log: (...a) => logs.push(a.map(String).join(" ")), warn: (...a) => logs.push("[warn] " + a.map(String).join(" ")), error: (...a) => logs.push("[error] " + a.map(String).join(" ")), info: (...a) => logs.push(a.map(String).join(" ")) };
+      try {
+        const fn = new Function("console", code);
+        const result = fn(fakeConsole);
+        if (result !== undefined && !logs.length) logs.push(String(result));
+      } catch (e) {
+        logs.push("[error] " + e.message);
+      }
+      out.textContent = logs.join("\n") || "(no output)";
+    } else {
+      const pistonLang = PISTON_LANG[lang] || lang;
+      const resp = await fetch("https://emkc.org/api/v2/piston/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: pistonLang, version: "*", files: [{ content: code }] })
+      });
+      if (!resp.ok) throw new Error("Piston API returned " + resp.status);
+      const data = await resp.json();
+      const run = data.run || {};
+      let txt = (run.stdout || "") + (run.stderr || "");
+      if (!txt.trim()) txt = "(no output)";
+      out.innerHTML = "";
+      if (run.stderr) {
+        const errSpan = document.createElement("span"); errSpan.className = "err"; errSpan.textContent = run.stderr;
+        const stdSpan = document.createTextNode(run.stdout || "");
+        out.appendChild(stdSpan); out.appendChild(errSpan);
+      } else {
+        out.textContent = txt;
+      }
+    }
+  } catch (e) {
+    out.innerHTML = '<span class="err">' + e.message.replace(/</g, "&lt;") + '</span>';
+  }
+  btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>Run';
+};
+
+window.clearOutput = function() { $("cpOutPre").textContent = ""; };
 
 // ══════════════════════════════════════════════
 //  MEDIA STATE UI
@@ -797,9 +879,8 @@ window.leaveRoom = function() {
   chatOpen = false; unread = 0;
   $("chatPanel").classList.remove("open"); $("chatBtn").classList.remove("active","has-dot");
   $("msgs").innerHTML = "";
-  codeOpen = false;
-  $("codeOverlay").classList.remove("open"); $("codeBtn").classList.remove("active");
-  $("cpEditor").value = ""; updateGutter();
+  if (codeOpen) { codeOpen = false; $("codeOverlay").classList.remove("open"); $("codeBtn").classList.remove("active"); document.querySelector(".topbar").style.display = ""; document.querySelector(".main").style.display = ""; document.querySelector(".controls").style.display = ""; }
+  $("cpEditor").value = ""; updateGutter(); $("cpOutPre").textContent = "";
 
   // Stop all tracks so camera light turns off
   if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
